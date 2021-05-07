@@ -1,0 +1,579 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<meta name="apple-mobile-web-app-capable" content="yes" />
+    <title>Doman H5</title>
+    <link href="http://apps.bdimg.com/libs/bootstrap/3.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <script src="http://apps.bdimg.com/libs/jquery/2.0.0/jquery.min.js"></script>
+    <script src="http://apps.bdimg.com/libs/bootstrap/3.3.0/js/bootstrap.min.js"></script>
+    <style>
+        .numInput {margin-top: 5px;}
+		.btnNumber{max-width:100px; max-height:100px;}
+    </style>
+</head>
+<body>
+    <div class="container" id="divSums">
+		<div class="panel panel-info">
+			<div class="panel-heading" style="height:38px;">
+				<h3 class="panel-title pull-left">乐果 闪卡教学</h3>
+				<a href="javascript:window.location='Home.html'" class="pull-right button-clear"> 
+					<span class="glyphicon glyphicon-home"></span> 
+					首页 
+				</a>
+				<div></div>
+			</div>
+			<div class="panel-body">
+				<div class="row">
+					<div class="col-xs-6 col-sm-6 col-md-6 col-lg-6">
+						<div class="form-group">
+							<textarea type="text" id="txtSums" class="form-control" style="width: 100%; height: 100px; vertical-align: top;"></textarea>
+						</div> 
+					    <div>
+					        <label>每行输入一道题算术题</label>
+					    </div>
+					    <div class="checkbox">
+					        <label title="默认勾选为没有运算符号优先级，否则按照运算符优先级计算">
+					            <input id="cbComputeType" type="checkbox" value="1" checked="checked"/>顺序计算 
+					        </label>
+					        <label title="使用语音播放数字">
+					            <input id="cbAudoRadio" type="checkbox" value="1"/>播放语音
+					        </label>
+					        <label title="通过点击任意键切换卡片">
+					            <input id="cbIsManual" type="checkbox" value="1"/>手动闪卡
+					        </label>
+					        <label class="pull-right" title="简闪：只展示答案，不展示题目">
+					            <input id="cbSimpleFlash" type="checkbox" value="1"/>简闪 
+					        </label>
+					        <label class="pull-right" title="答案和题目通过数字展示，而非圆点展示">
+					            <input id="cbIsNumber" type="checkbox" value="1"/>数字闪卡
+					        </label>
+					    </div>
+					</div>
+					<div id="btnContainer" class="col-xs-6 col-sm-6 col-md-6 col-lg-6">
+						<table class="numInput">
+							<tr>
+								<td><button type="button" onclick="inputNum('7');" class="btnNumber btn btn-default">7</button></td>
+								<td><button type="button" onclick="inputNum('8');" class="btnNumber btn btn-default">8</button></td>
+								<td><button type="button" onclick="inputNum('9');" class="btnNumber btn btn-default">9</button></td>
+								<td><button type="button" onclick="inputNum('+');" class="btnNumber btn btn-default">+</button></td>
+							</tr>
+							<tr>
+								<td><button type="button" onclick="inputNum('4');" class="btnNumber btn btn-default">4</button></td>
+								<td><button type="button" onclick="inputNum('5');" class="btnNumber btn btn-default">5</button></td>
+								<td><button type="button" onclick="inputNum('6');" class="btnNumber btn btn-default">6</button></td>
+								<td><button type="button" onclick="inputNum('-');" class="btnNumber btn btn-default">-</button></td>
+							</tr>
+							<tr>
+								<td><button type="button" onclick="inputNum('1');" class="btnNumber btn btn-default">1</button></td>
+								<td><button type="button" onclick="inputNum('2');" class="btnNumber btn btn-default">2</button></td>
+								<td><button type="button" onclick="inputNum('3');" class="btnNumber btn btn-default">3</button></td>
+								<td><button type="button" onclick="inputNum('*');" class="btnNumber btn btn-default">*</button></td>
+							</tr>
+							<tr>
+								<td><button type="button" onclick="inputNum('0');" class="btnNumber btn btn-default">0</button></td>
+								<td><button type="button" onclick="inputNum('\n');" class="btnNumber btn btn-default">Ent</button></td>
+								<td><button type="button" onclick="inputNum('=');" class="btnNumber btn btn-default">=</button></td>
+								<td><button type="button" onclick="inputNum('/');" class="btnNumber btn btn-default">/</button></td>
+							</tr>
+							<tr>
+								<td colspan="2">
+									<button type="button" onclick="inputNum('Cle');" class="btn btn-info" style="width: 100%; height: 50px; margin-top: 10px; margin-right:3px;">Cle</button>
+								</td>
+								<td colspan="2">
+									<button type="button" id="btnBegin" class="btn btn-primary" style="width: 100%; height: 50px; margin-top: 10px; margin-left:3px;">开始</button>
+								</td>
+							</tr>
+						</table>				
+					</div>
+				</div>
+			</div>
+		</div>
+    </div>
+	<!-- 添加canvas标签，并加上红色边框以便于在页面上查看 -->
+	<canvas id="myCanvas" style="display: none;">您的浏览器不支持canvas标签。
+	</canvas>
+	<audio id="audio" src="source/count_audio.wav" ></audio>
+	<audio id="audio2" src="source/count_audio2.wav" ></audio>
+	<audio id="audio3" src="source/count_audio3.wav" ></audio>
+</body>
+    <script type="text/javascript">
+
+
+        //获取Canvas对象(画布)
+        var canvas = document.getElementById("myCanvas");
+
+        var sumTxtList = [];//算数列表
+        var sumTxtNum = 0;//第几个算数
+        var sumNumList = [];//算数数字列表
+        var sumNum = 0;//显示第几个数字
+        var circleRadius = 30;//实心圆半径
+        var minGap = 5;//实心圆最小间距
+        var checkTime = 0;//连续检测重叠次数
+        var checkTimeMax = 100;//连续检测重叠次数
+        var redrawTime = 0;//重新绘制图片次数
+        var redrawTimeMax = 10;//重新绘制图片次数
+        var stopFlash = false;//是否终止闪卡
+        var isSimpleFlash = false;//是否简闪
+        var isManual = false;//是否手动闪卡
+        var isNumber = false;//是否展示数字卡
+        var isAudoRadio = false;//是否播放语音
+
+        $(function () {
+
+            String.prototype.replaceAll = function (s1, s2) {
+                return this.replace(new RegExp(s1, "gm"), s2);
+            }
+
+            resizeLayout();
+            $(window).resize(function () {
+                resizeLayout();
+                resizeButtons();
+            });
+
+            resizeButtons();
+
+            //简单地检测当前浏览器是否支持Canvas对象，以免在一些不支持html5的浏览器中提示语法错误
+            if (!canvas.getContext) {
+                alert("您的浏览器不支持html5，请更换浏览器");
+                return;
+            }
+
+            //算术文本框输入内容
+            $("#txtSums").keypress(function (e) {
+                if (e.charCode == 61) {
+                    inputNum("=");
+                    //阻止默认事件
+                    if (e.preventDefault) {
+                        e.preventDefault();
+                    } else {
+                        e.returnValue = false;
+                    }
+                }
+            });
+
+            //开始按钮
+            $("#btnBegin").click(function () {
+                stopFlash = false;
+                var sumTxt = $("#txtSums").val();
+                if (sumTxt == '') {
+                    alert("请输入算术题，每行输入一道题");
+                    return;
+                }
+                sumTxtList = sumTxt.split('\n');
+                sumTxtNum = 0;
+                sumNum = 0;
+                $("#divSums").hide();
+                $("#myCanvas").show();
+                isManual = $("#cbIsManual").get(0).checked;
+                isSimpleFlash = $("#cbSimpleFlash").get(0).checked;
+                isNumber = $("#cbIsNumber").get(0).checked;
+                isAudoRadio = $("#cbAudoRadio").get(0).checked;
+                //是否手动闪卡
+                $("#myCanvas").unbind("click");
+                $(window).unbind("keydown");
+                if (isManual) {
+                    $(window).keydown(function () { doFlash(); });
+                    $("#myCanvas").click(function () { doFlash(); });
+                }
+                //开始闪卡
+                doFlash();
+            });
+
+            //双击画布事件
+            $("#myCanvas").dblclick(function () {
+                stopFlash = true;
+            });
+
+            //页面高度超过设备可见高度时，阻止掉touchmove事件
+            document.body.addEventListener('touchmove', function (event) {
+                event.preventDefault();
+            }, false);
+        });
+
+        //闪卡
+        function doFlash() {
+            //自动循环
+            var t;
+            if (isSimpleFlash) {
+                t = drawSumSimple();
+            } else {
+                t = drawSum();
+            }
+            if (t == 0) {
+                doStopFlash();
+                return;
+            }
+            if (!isManual) {
+                setTimeout('doFlash()', t);
+            }
+        }
+
+        //重置工作区高宽
+        function resizeLayout() {
+            var wh = $(window).height();
+            var ww = $(window).width();
+            $("body").css({ width: ww + "px", height: wh + "px" });
+            canvas.width = ww;
+            canvas.height = wh - 10;
+
+            circleRadius = (ww < wh ? ww : wh) / 25;
+        }
+
+        //设置按钮大小
+        function resizeButtons() {
+            var ww = $(window).width();
+            var bw = (ww - 30) / 8 - 20;
+            $(".btnNumber").each(function () {
+                $(this).css({ padding: 0, margin: "3px" }).width(bw).height(bw);
+            });
+
+            $("#txtSums").height($("#btnContainer").height() - 95);
+        }
+
+        //输入算数
+        function inputNum(v) {
+            if (v == "Cle") {
+                sumList = [];
+                $("#txtSums").val("");
+                return;
+            } else if (v == "=") {
+                var sumTxts = $("#txtSums").val().split("\n");
+                var sumTxt = sumTxts[sumTxts.length - 1];
+                var hasEqual = sumTxt.indexOf("=") > -1;
+                if (hasEqual) {
+                    sumTxt = sumTxt.substring(0, sumTxt.length - 1);
+                }
+                var type = $("#cbComputeType").get(0).checked ? 2 : 1;
+                var sumRst = computeSum(sumTxt, type);
+                if (hasEqual) {
+                    v = sumRst;
+                } else {
+                    v = v + sumRst;
+                }
+            }
+            $("#txtSums").val($("#txtSums").val() + v);
+        }
+
+        //计算算数
+        function computeSum(sumTxt, type) {
+            if (type != undefined && type == 2) {
+                var nums = sumTxt.split(/\+|-|\*|\//);
+                var optsTemp = sumTxt.split(/\d|\./);
+                var opts = [];
+                for (var i in optsTemp) {
+                    if (optsTemp[i] != "") {
+                        opts.push(optsTemp[i]);
+                    }
+                }
+                var rst = 0;
+                for (var j = 0; j < opts.length; j++) {
+                    if (j == 0) {
+                        rst = eval(nums[j] + opts[j] + nums[j + 1]);
+                    } else {
+                        rst = eval(rst + opts[j] + nums[j + 1]);
+                    }
+                }
+                return rst;
+            } else {
+                return eval(sumTxt);
+            }
+        }
+
+        //绘制数学表达式
+        function drawSum() {
+            //终止闪卡
+            if (stopFlash) {
+                return 0;
+            }
+            if (sumNum == sumNumList.length) {
+                if (sumTxtNum == sumTxtList.length) {
+                    return 0;
+                }
+                sumNumList = [];
+                sumNum = 0;
+                sumTxt = sumTxtList[sumTxtNum++];
+                var sumNodes = sumTxt.split(/\+|-|\*|\/|=/);
+                for (var n in sumNodes) {
+                    var node = sumNodes[n];
+                    if (!isNaN(node)) {
+                        sumNumList.push(parseInt(node));
+                    }
+                }
+                clearCanvas();
+                drawSumTxt(sumTxt);
+                return 800; //空白题目亮0.8秒
+            }
+            clearCanvas();
+            var num = sumNumList[sumNum];
+            if (isNumber) {
+                //drawNumber(num);
+                drawNumberTxt(sumTxt, sumNum);
+            } else {
+                drawCircles(num);
+            }
+            drawSumTxt(sumTxt, sumNum++);
+
+            if (sumNum == sumNumList.length) {
+                return 1500; //最后一个数字亮1.5秒
+            } else {
+                return 1000; //数字亮1秒
+            }
+        }
+
+        //终止闪卡
+        function doStopFlash() {
+            $("#myCanvas").hide();
+            $("#divSums").show();
+            sumTxtNum = 0;
+            sumTxt = "";
+            sumNumList = [];
+            sumNum = 0;
+            clearCanvas();
+        }
+
+        //绘制简闪数学表达式
+        function drawSumSimple() {
+            if (sumNum == sumNumList.length) {
+                if (sumTxtNum == sumTxtList.length) {
+                    return 0;
+                }
+                sumNumList = [];
+                sumNum = 0;
+                sumTxt = sumTxtList[sumTxtNum++];
+                isReadSimpleFlash = sumTxt.indexOf("=") < 0;
+                var sumNodes = sumTxt.split(/\+|-|\*|\/|=/);
+                for (var n in sumNodes) {
+                    var node = sumNodes[n];
+                    if (!isNaN(node)) {
+                        sumNumList.push(parseInt(node));
+                    }
+                }
+                clearCanvas();
+                drawSumTxt(sumTxt);
+                return 800;//空白题目亮0.8秒
+            }
+            clearCanvas();
+            if (sumNum == sumNumList.length - 1) {
+                var num = sumNumList[sumNum];
+                if (isNumber) {
+                    //drawNumber(num);
+                    drawNumberTxt(sumTxt, sumNum);
+                } else {
+                    drawCircles(num);
+                }
+                drawSumTxt(sumTxt, sumNum++);
+                return 1500;
+            } else {
+                drawSumTxt(sumTxt, sumNum++);
+                return 800;//空白题目亮0.8秒
+            }
+        }
+
+        //清屏
+        function clearCanvas() {
+            //canvas清除屏幕
+            //canvas.width = canvas.width;
+            var context = canvas.getContext("2d");
+            context.fillStyle = "#eee";
+            context.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        //绘制算数文字
+        function drawSumTxt(sumTxt, sumNo) {
+            if (sumNo == undefined) {
+                sumNo = -1;
+            }
+            var ctx = canvas.getContext("2d");
+            ctx.font = "27px Courier New";
+            var nums = sumTxt.split(/\+|-|\*|\/|=/);
+            var optsTemp = sumTxt.split(/\d|\./);
+            var opts = [];
+            for (var i in optsTemp) {
+                if (optsTemp[i] != "") {
+                    opts.push(optsTemp[i]);
+                }
+            }
+            var numTemp = 0;
+            var optTemp = "";
+            var wmw = 0;
+            for (var j = 0; j < nums.length; j++) {
+                ctx.fillStyle = "gray";
+                if (j == sumNo) {
+                    ctx.fillStyle = "black";
+                    numTemp = nums[j];
+                    if (j > 0) {
+                        optTemp = opts[j - 1];
+                    }
+                }
+                ctx.fillText(nums[j], 10 + wmw, 20);
+                ctx.fillStyle = "gray";
+                wmw = wmw + ctx.measureText(nums[j]).width;
+                if (j < nums.length - 1) {
+                    ctx.fillText(opts[j], 10 + wmw, 20);
+                    wmw = wmw + ctx.measureText(opts[j]).width;
+                }
+            }
+            if (isAudoRadio && sumNo >= 0) {
+                if (optTemp == "") {
+                    playAudio(numTemp);
+                } else {
+                    playAudio(optTemp);
+                    setTimeout("playAudio(" + numTemp + ")", 500);
+                }
+            }
+        }
+
+        //播放声音:0,1-10和+-X/=
+        function playAudio(n) {
+            if (isNaN(n)) {
+                var n3 = 0;
+                if (n == "+") { n3 = 0; }
+                else if (n == "-") { n3 = 1; }
+                else if (n == "*") { n3 = 2; }
+                else if (n == "/") { n3 = 3; }
+                else if (n == "=") { n3 = 4; }
+                var audio3 = document.getElementById("audio3");
+                audio3.currentTime = n3;
+                audio3.play();
+                setTimeout("document.getElementById('audio3').pause()", 600);
+            }
+            if (n > 0 && n < 10) {
+                var audio = document.getElementById("audio");
+                audio.currentTime = n;
+                audio.play();
+                setTimeout("document.getElementById('audio').pause()", 500);
+                return;
+            } else if (n >= 10 && n < 100) {
+                var n1 = n % 10;
+                var n2 = parseInt(n / 10);
+                var audio2 = document.getElementById("audio2");
+                audio2.currentTime = n2;
+                audio2.play();
+                setTimeout("document.getElementById('audio2').pause()", 700);
+                setTimeout("playAudio(" + n1 + ")", 500);
+                return;
+            }
+        }
+
+        //绘制num
+        function drawNumber(num) {
+            var ctx = canvas.getContext("2d");
+            ctx.font = "400px Courier New bold";
+            ctx.fillStyle = "#f22"; //填充颜色,默认是红色
+            var w = ctx.measureText(num).width;
+            var h = 200;
+            ctx.fillText(num, canvas.width / 2 - (w / 2), canvas.height / 2 + (h / 2));
+        }
+
+        //绘制数字闪卡算术题
+        function drawNumberTxt(sumTxt, sumNo) {
+            sumTxt = sumTxt.replaceAll("\\*", "×");
+            sumTxt = sumTxt.replaceAll("\\/", "÷");
+            var nums = sumTxt.split(/\+|-|\*|\/|×|÷|=/);
+            var optsTemp = sumTxt.split(/\d|\./);
+            var opts = [];
+            for (var i in optsTemp) {
+                if (optsTemp[i] != "") {
+                    opts.push(optsTemp[i]);
+                }
+            }
+            var sumTxtTemp = "";
+            for (var j = 0; j < nums.length; j++) {
+                if (j > sumNo) {
+                    break;
+                }
+                if (j > 0) {
+                    sumTxtTemp += opts[j - 1];
+                }
+                sumTxtTemp += nums[j];
+            }
+            var ctx = canvas.getContext("2d");
+            var fontSize = 400;
+            ctx.font = fontSize + "px Courier New bold";
+            ctx.fillStyle = "#f22"; //填充颜色,默认是红色
+            var w = ctx.measureText(sumTxt).width;
+            while (w > canvas.width) {
+                fontSize = fontSize / 2;
+                ctx.font = fontSize + "px Courier New bold";
+                w = ctx.measureText(sumTxt).width;
+            }
+            ctx.fillText(sumTxtTemp, canvas.width / 2 - (w / 2), canvas.height / 2);
+        }
+
+        //绘制num个实心圆
+        function drawCircles(num) {
+            //生成实心圆随机位置
+            var circleList = generateRandomPoistions(num);
+            //绘制实心圆
+            for (var c in circleList) {
+                var cir = circleList[c];
+                drawCircle(cir.cl, cir.ct);
+            }
+        }
+
+        //生成实心圆随机位置
+        function generateRandomPoistions(num) {
+            checkTime = 0;
+            var circleList = [];//实心圆列表
+            var oval = [canvas.width / 2, canvas.height / 2];//画布长宽
+            var rad = 10;
+            if (num < 15) {
+                rad = 7;
+            }
+            var rw = (canvas.width / 2 - 50) * rad / 10;//宽半径
+            var rh = (canvas.height / 2 - 50) * rad / 10;//高半径
+            for (var i = 0; i < num; i++) {
+                var l = Math.random() * (2 * rw) + (oval[0] - rw);
+                var h = Math.random() * (2 * rh) + (oval[1] - rh);
+                if (checkOverlap(circleList, l, h)) {
+                    i--;
+                    if (checkTime++ >= checkTimeMax) {
+                        redrawTime++;
+                        if (redrawTime >= redrawTimeMax) {
+                            drawInfoTxt("数字" + num + "太大，无法展示");
+                            return [];
+                        }
+                        return generateRandomPoistions(num);
+                    }
+                    continue;
+                }
+                checkTime = 0;
+                circleList.push({ cl: l, ct: h });
+            };
+            return circleList;
+        }
+
+        //绘制实心圆
+        function drawCircle(l, t) {
+            var cxt = canvas.getContext("2d");
+            cxt.beginPath();
+            cxt.arc(l, t, circleRadius, 0, 360, false);
+            cxt.fillStyle = "#f22";//填充颜色,默认是红色
+            cxt.fill();//画实心圆
+            cxt.closePath();
+        }
+
+        //检测重叠
+        function checkOverlap(circleList, l, t) {
+            for (var x in circleList) {
+                var xdiff = l - circleList[x].cl;// 计算两个点的横坐标之差
+                var ydiff = t - circleList[x].ct;// 计算两个点的纵坐标之差
+                var gap = Math.pow((xdiff * xdiff + ydiff * ydiff), 0.5);
+                if (gap < circleRadius * 2 + minGap) return true;
+            }
+            return false;
+        }
+
+        //绘制汉字
+        function drawInfoTxt(info) {
+            var ctx = canvas.getContext("2d");
+            ctx.font = "27px Courier New";
+            ctx.fillStyle = "#f33";
+            var infow = ctx.measureText(info).width;
+            //var infoh = ctx.measureText(info).height;
+            ctx.fillText(info, (canvas.width - infow) / 2, canvas.height / 2);
+        }
+    </script>
+</html>
